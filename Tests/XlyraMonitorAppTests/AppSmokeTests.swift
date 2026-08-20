@@ -197,6 +197,27 @@ final class AppSmokeTests: XCTestCase {
         XCTAssert(snapshot.healthLevel == XlyraHealthLevel.warning)
         XCTAssert(snapshot.riskItems.contains("站点异常 1 个"))
     }
+
+    func testXlyraAPIKeyQuotaUsesCurrentTotalUsage() throws {
+        let key = try JSONDecoder().decode(XlyraAPIKeyRow.self, from: """
+        {
+          "name": "downstream",
+          "masked_key": "sk-test",
+          "status": "active",
+          "quota_limit": 100,
+          "quota_used": 457.64,
+          "quota_total_used": 12.34,
+          "quota_unlimited": false
+        }
+        """.data(using: .utf8)!)
+
+        XCTAssert(key.quotaUsed == 457.64)
+        XCTAssert(key.quotaTotalUsed == 12.34)
+        XCTAssert(key.isExhausted == false)
+        XCTAssert(key.quotaText.contains("$12.34"))
+        XCTAssert(key.quotaText.contains("累计 $457.64"))
+    }
+
     func testXlyraSiteMissingOptionalValidationAndSyncStatusIsUsable() throws {
         let data = """
         {
@@ -872,6 +893,9 @@ final class AppSmokeTests: XCTestCase {
         XCTAssert(snapshot.sites.rows.first?.syncStatus == "synced")
         XCTAssert(snapshot.sites.rows.first?.recentHealth?.latencyMS == 345)
         XCTAssert(snapshot.apiKeys.active == 1)
+        XCTAssert(snapshot.apiKeys.rows.first?.quotaTotalUsed == 2.5)
+        XCTAssert(snapshot.apiKeys.rows.first?.quotaText.contains("$2.50") == true)
+        XCTAssert(snapshot.apiKeys.rows.first?.quotaText.contains("累计 $4.50") == true)
         XCTAssert(snapshot.requests.failed24h == 1)
         XCTAssert(snapshot.requests.last24h == 10)
         XCTAssert(snapshot.requests.ok24h == 9)
@@ -1353,7 +1377,8 @@ final class AppSmokeTests: XCTestCase {
           "masked_key": "sk-9...3786",
           "status": "active",
           "quota_unlimited": true,
-          "quota_used": 4.5
+          "quota_used": 4.5,
+          "quota_total_used": 2.5
         }
       ],
       "meta": { "count": 1 }
