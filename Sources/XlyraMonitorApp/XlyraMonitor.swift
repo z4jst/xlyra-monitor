@@ -675,6 +675,7 @@ struct XlyraAPIKeyRow: Decodable, Equatable, Identifiable {
     let status: String
     let quotaLimit: Double?
     let quotaUsed: Double
+    let quotaTotalUsed: Double?
     let quotaUnlimited: Bool
     let lastUsedAt: String?
     let expiresAt: String?
@@ -689,13 +690,21 @@ struct XlyraAPIKeyRow: Decodable, Equatable, Identifiable {
 
     var isExhausted: Bool {
         guard quotaUnlimited == false, let quotaLimit else { return false }
-        return quotaUsed >= quotaLimit
+        return effectiveQuotaUsed >= quotaLimit
     }
 
     var quotaText: String {
-        if quotaUnlimited { return "不限额 · 已用 $\(Self.moneyFormatter.string(from: NSNumber(value: quotaUsed)) ?? "0")" }
+        let current = Self.moneyFormatter.string(from: NSNumber(value: effectiveQuotaUsed)) ?? "0"
+        let lifetime = quotaTotalUsed == nil
+            ? ""
+            : " · 累计 $\(Self.moneyFormatter.string(from: NSNumber(value: quotaUsed)) ?? "0")"
+        if quotaUnlimited { return "不限额 · 当前 $\(current)\(lifetime)" }
         let limit = quotaLimit ?? 0
-        return "$\(Self.moneyFormatter.string(from: NSNumber(value: quotaUsed)) ?? "0") / $\(Self.moneyFormatter.string(from: NSNumber(value: limit)) ?? "0")"
+        return "当前 $\(current) / $\(Self.moneyFormatter.string(from: NSNumber(value: limit)) ?? "0")\(lifetime)"
+    }
+
+    private var effectiveQuotaUsed: Double {
+        quotaTotalUsed ?? quotaUsed
     }
 
     enum CodingKeys: String, CodingKey {
@@ -704,6 +713,7 @@ struct XlyraAPIKeyRow: Decodable, Equatable, Identifiable {
         case copyableKey = "copyable_key"
         case quotaLimit = "quota_limit"
         case quotaUsed = "quota_used"
+        case quotaTotalUsed = "quota_total_used"
         case quotaUnlimited = "quota_unlimited"
         case lastUsedAt = "last_used_at"
         case expiresAt = "expires_at"
@@ -1541,6 +1551,7 @@ enum XlyraAPISnapshotBuilder {
             status: string(object, "status") ?? "active",
             quotaLimit: double(object, "quota_limit", "quota.limit", "quotaLimit"),
             quotaUsed: double(object, "quota_used", "quota.used", "quotaUsed") ?? 0,
+            quotaTotalUsed: double(object, "quota_total_used", "quota.total_used", "quotaTotalUsed"),
             quotaUnlimited: bool(object, "quota_unlimited", "quota.unlimited", "quotaUnlimited") ?? (double(object, "quota_limit", "quota.limit", "quotaLimit") == nil),
             lastUsedAt: string(object, "last_used_at", "lastUsedAt"),
             expiresAt: string(object, "expires_at", "expiresAt")
