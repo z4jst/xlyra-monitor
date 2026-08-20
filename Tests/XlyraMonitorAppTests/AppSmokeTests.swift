@@ -8,7 +8,7 @@ final class AppSmokeTests: XCTestCase {
     func testAppTargetExposesMenuBarMetadata() {
         XCTAssert(XlyraMonitorAppMetadata.menuBarTitle == "xLyra")
         XCTAssert(XlyraMonitorAppMetadata.menuBarLabel == "xLyra 监控")
-        XCTAssert(XlyraMonitorAppMetadata.fallbackVersion == "0.1.14")
+        XCTAssert(XlyraMonitorAppMetadata.fallbackVersion == "0.1.15")
     }
 
     func testUpdateVersionComparisonHandlesTags() {
