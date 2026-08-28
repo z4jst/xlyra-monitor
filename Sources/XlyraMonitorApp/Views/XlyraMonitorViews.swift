@@ -1466,7 +1466,7 @@ struct XlyraSettingsWindowView: View {
     @ObservedObject var preferences: AppPreferences
     let monitorPreferences: XlyraMonitorPreferences
     let monitor: XlyraMonitor
-    let loginItem: LoginItemService
+    let loginItem: any LoginItemManaging
     @ObservedObject var updateCoordinator: XlyraAppUpdateCoordinator
 
     @State private var consoleURLText = ""
@@ -1694,6 +1694,13 @@ struct XlyraSettingsWindowView: View {
             return
         }
 
+        do {
+            try loginItem.applyEnabledState(launchAtLogin)
+        } catch {
+            message = "开机自启动设置失败，请在系统设置的登录项中检查权限后重试"
+            return
+        }
+        monitorPreferences.syncLaunchAtLogin(launchAtLogin)
         monitorPreferences.consoleURL = consoleURL
         do {
             if adminAccessTokenText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
@@ -1710,7 +1717,6 @@ struct XlyraSettingsWindowView: View {
             showsMenuBarNumbers: preferences.showsMenuBarNumbers,
             themeMode: themeMode
         )
-        try? loginItem.setEnabled(launchAtLogin)
         monitor.start(
             statusInterval: TimeInterval(statusInterval),
             oauthInterval: TimeInterval(oauthInterval)

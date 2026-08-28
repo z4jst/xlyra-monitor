@@ -94,4 +94,23 @@ extension LoginItemTests {
         XCTAssertThrowsError(try manager.applyEnabledState(true))
         XCTAssertEqual(manager.requestedStates, [true])
     }
+
+    @MainActor
+    func testSettingsViewAcceptsLoginItemManagerProtocol() {
+        let preferences = AppPreferences(userDefaults: UserDefaults(suiteName: UUID().uuidString)!)
+        let monitorPreferences = XlyraMonitorPreferences(
+            configURL: URL(fileURLWithPath: NSTemporaryDirectory())
+                .appendingPathComponent("xlyra-login-item-view-\(UUID().uuidString).json")
+        )
+        let monitor = XlyraMonitor(state: XlyraMonitorState(), preferences: monitorPreferences)
+        let manager = LoginItemManagerSpy()
+
+        _ = XlyraSettingsWindowView(
+            preferences: preferences,
+            monitorPreferences: monitorPreferences,
+            monitor: monitor,
+            loginItem: manager,
+            updateCoordinator: XlyraAppUpdateCoordinator()
+        )
+    }
 }
