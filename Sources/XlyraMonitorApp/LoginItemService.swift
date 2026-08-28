@@ -10,6 +10,15 @@ enum LoginItemError: Error {
     case updateFailed
 }
 
+extension LoginItemManaging {
+    func applyEnabledState(_ isEnabled: Bool) throws {
+        try setEnabled(isEnabled)
+        guard self.isEnabled == isEnabled else {
+            throw LoginItemError.updateFailed
+        }
+    }
+}
+
 struct LoginItemService: LoginItemManaging {
     var isEnabled: Bool {
         SMAppService.mainApp.status == .enabled
@@ -17,11 +26,12 @@ struct LoginItemService: LoginItemManaging {
 
     func setEnabled(_ isEnabled: Bool) throws {
         do {
+            let status = SMAppService.mainApp.status
             if isEnabled {
-                if SMAppService.mainApp.status != .enabled {
+                if status == .notRegistered {
                     try SMAppService.mainApp.register()
                 }
-            } else if SMAppService.mainApp.status == .enabled {
+            } else if status == .enabled || status == .requiresApproval {
                 try SMAppService.mainApp.unregister()
             }
         } catch {

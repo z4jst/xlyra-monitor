@@ -43,3 +43,55 @@ final class LoginItemTests: XCTestCase {
         return (directoryURL, directoryURL.appendingPathComponent("config.json"))
     }
 }
+
+private enum TestLoginItemError: Error {
+    case failed
+}
+
+private final class LoginItemManagerSpy: LoginItemManaging {
+    var isEnabled: Bool
+    var requestedStates: [Bool] = []
+    var error: Error?
+    var updatesState = true
+
+    init(isEnabled: Bool = false) {
+        self.isEnabled = isEnabled
+    }
+
+    func setEnabled(_ isEnabled: Bool) throws {
+        requestedStates.append(isEnabled)
+        if let error {
+            throw error
+        }
+        if updatesState {
+            self.isEnabled = isEnabled
+        }
+    }
+}
+
+extension LoginItemTests {
+    func testApplyEnabledStateRequestsAndVerifiesEnabledState() throws {
+        let manager = LoginItemManagerSpy()
+
+        try manager.applyEnabledState(true)
+
+        XCTAssertEqual(manager.requestedStates, [true])
+        XCTAssertTrue(manager.isEnabled)
+    }
+
+    func testApplyEnabledStatePropagatesManagerFailure() {
+        let manager = LoginItemManagerSpy()
+        manager.error = TestLoginItemError.failed
+
+        XCTAssertThrowsError(try manager.applyEnabledState(true))
+        XCTAssertEqual(manager.requestedStates, [true])
+    }
+
+    func testApplyEnabledStateFailsWhenSystemStateDoesNotReachTarget() {
+        let manager = LoginItemManagerSpy()
+        manager.updatesState = false
+
+        XCTAssertThrowsError(try manager.applyEnabledState(true))
+        XCTAssertEqual(manager.requestedStates, [true])
+    }
+}
