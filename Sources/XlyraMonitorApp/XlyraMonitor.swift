@@ -2008,6 +2008,7 @@ final class XlyraAppContainer: ObservableObject {
             }
             .store(in: &cancellables)
 
+        monitorPreferences.syncLaunchAtLogin(loginItem.isEnabled)
         monitor.start(
             statusInterval: appPreferences.refreshIntervalSeconds,
             oauthInterval: appPreferences.oauthRefreshIntervalSeconds
