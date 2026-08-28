@@ -985,6 +985,22 @@ final class XlyraMonitorPreferences {
         save(config)
     }
 
+    var launchAtLogin: Bool {
+        get { configuration().launchAtLogin }
+        set {
+            var config = configuration()
+            config.launchAtLogin = newValue
+            save(config)
+        }
+    }
+
+    func syncLaunchAtLogin(_ enabled: Bool) {
+        var config = configuration()
+        guard config.launchAtLogin != enabled else { return }
+        config.launchAtLogin = enabled
+        save(config)
+    }
+
     private func configuration() -> XlyraMonitorConfiguration {
         guard let data = try? Data(contentsOf: configURL),
               let config = try? JSONDecoder().decode(XlyraMonitorConfiguration.self, from: data) else {
@@ -1018,6 +1034,30 @@ final class XlyraMonitorPreferences {
 private struct XlyraMonitorConfiguration: Codable, Equatable {
     var consoleURL: String?
     var adminAccessToken: String?
+    var launchAtLogin: Bool
+
+    init(
+        consoleURL: String? = nil,
+        adminAccessToken: String? = nil,
+        launchAtLogin: Bool = false
+    ) {
+        self.consoleURL = consoleURL
+        self.adminAccessToken = adminAccessToken
+        self.launchAtLogin = launchAtLogin
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case consoleURL
+        case adminAccessToken
+        case launchAtLogin
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        consoleURL = try container.decodeIfPresent(String.self, forKey: .consoleURL)
+        adminAccessToken = try container.decodeIfPresent(String.self, forKey: .adminAccessToken)
+        launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? false
+    }
 }
 
 struct XlyraOAuthImportResult: Equatable {
